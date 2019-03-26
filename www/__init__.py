@@ -1,17 +1,33 @@
 from flask import Flask
-#创建app应用,__name__是python预定义变量，被设置为使用本模块.
 from flask_bootstrap import Bootstrap
 from flask_nav import Nav
 from flask_nav.elements import *
+from config import config
 
-nav=Nav()
+nav = Nav()
 nav.register_element('top', Navbar(u'文本分类',
-                                    View(u'分类', 'home'),
-                                    View(u'关于', 'about'),
-))
+                                   View(u'分类', 'app.index'),
+                                   View(u'关于', 'app.info'),
+                                   )
+                     )
+bootstrap = Bootstrap()
 
-app = Flask(__name__)
-Bootstrap(app)
-nav.init_app(app)
-#如果你使用的IDE，在routes这里会报错，因为我们还没有创建呀，为了一会不要再回来写一遍，因此我先写上了
-from www import routes
+
+def create_app(config_name):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name]) # 可以直接把对象里面的配置数据转换到app.config里面
+    config[config_name].init_app(app)
+
+    bootstrap.init_app(app)
+    nav.init_app(app)
+    #mail.init_app(app)
+    #moment.init_app(app)
+    #db.init_app(app)
+    # 路由和其他处理程序定义
+    from www import view
+    app.register_blueprint(view.bp)
+    app.add_url_rule('/', endpoint='index')
+    return app
+
+
+from www import view
