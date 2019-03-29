@@ -19,71 +19,150 @@
 
     <script>
         $(document).ready(function() {
-            $('#example').DataTable( {
+            var tabledata = {};
+            $("#load").hide();
+            var jsonID = {"ID": {{ id|tojson }} };
+
+            var dataTable = $('#example').DataTable( {
                 language: {
                     "lengthMenu" : '每页显示<select>' + '<option value="10">10</option>'
-													+ '<option value="20">20</option>'
-													+ '<option value="30">30</option>'
-													+ '<option value="40">40</option>'
-													+ '<option value="50">50</option>' + '</select>条',
+                                                    + '<option value="20">20</option>'
+                                                    + '<option value="30">30</option>'
+                                                    + '<option value="40">40</option>'
+                                                    + '<option value="50">50</option>' + '</select>条',
                     "paginate" : {
-										"first" : "首页",
-										"last" : "尾页",
-										"previous" : "上一页",
-										"next" : "下一页"
-										},
-					"processing" : "加载中...",  //DataTables载入数据时，是否显示‘进度’提示
-					"emptyTable" : "暂无数据",
-					"info" : "共 _PAGES_ 页  _TOTAL_ 条数据  ",
-					"infoEmpty" : "暂无数据",
-					"emptyTable" : "暂无要处理的数据...",  //表格中无数据
-					"search": "搜索:",
-					"infoFiltered" : " —— 从  _MAX_ 条数据中筛选",
-					"zeroRecords":    "没有找到记录"
-				},
+                                        "first" : "首页",
+                                        "last" : "尾页",
+                                        "previous" : "上一页",
+                                        "next" : "下一页"
+                                        },
+                    "processing" : "加载中...",  //DataTables载入数据时，是否显示‘进度’提示
+                    "emptyTable" : "暂无数据",
+                    "info" : "共 _PAGES_ 页  _TOTAL_ 条数据  ",
+                    "infoEmpty" : "暂无数据",
+                    "emptyTable" : "暂无要处理的数据...",  //表格中无数据
+                    "search": "搜索:",
+                    "infoFiltered" : " —— 从  _MAX_ 条数据中筛选",
+                    "zeroRecords":    "没有找到记录"
+                },
                 ajax: {
-                    url: "{{ url_for('app.ajax') }}",
-                    dataSrc: '',
+                    url: "{{ url_for('app.loadjson') }}",
+                    type: "POST",
+                    dataType: "json",
+                    data: function () {
+                        return jsonID;
+                    },
+                    dataSrc: 'data',
                 },
                 columns: [//返回的json数据在这里填充，注意一定要与上面的<th>数量对应，否则排版出现扭曲
                     { "data": "item" },
                     { "data": "type" },
                 ]
             } );
+
+            $("#btn").click(
+                function () {
+                    var data = {
+                        "type" : "text",
+                        "data" : document.getElementById("texts").value
+                    }
+                    $("#load").show();
+                    $.ajax({
+                        url: "{{ url_for('app.ajax') }}",
+                        type: "POST",
+                        dataType: "json",
+                        data: data,
+                        success: function (jsondata) {
+                            jsonID["ID"] = jsondata["ID"];
+                            dataTable.ajax.reload();
+                            $("#load").hide();
+                        }
+                    });
+
+                }
+            );
+            function uploadPic() {
+                var form = document.getElementById('upload'),
+                formData = new FormData(form);
+                $.ajax({
+                    url:"{{ url_for('app.upload') }}",
+                    type:"post",
+                    data:formData,
+                    processData:false,
+                    contentType:false,
+                    success:function(res){
+                        if(res){
+                         alert("上传成功！请稍等");
+                        }
+                    },
+                    error:function(err){
+                        alert("网络连接失败,稍后重试",err);
+                    }
+                })
+            }
+            $("#btnFile").click(
+                function () {
+                    uploadPic();
+                    var data = {
+                        "type" : "file",
+                        "data" : (document.getElementById("file").files)[0].name
+                    }
+                    $("#load").show();
+                    $.ajax({
+                        url: "{{ url_for('app.ajax') }}",
+                        type: "POST",
+                        dataType: "json",
+                        data: data,
+                        success: function (jsondata) {
+                            $("#load").hide();
+                            jsonID["ID"] = jsondata["ID"];
+                            dataTable.ajax.reload();
+                        }
+                    })
+                }
+            );
         } );
+
     </script>
 {% endblock %}
 
 
 {% block content %}
+    <p id="demo"></p>
+    <div>
+        <img src="{{ url_for('static', filename='icon/loading.gif') }}" id="load">
+    </div>
+
     <div class="container" align="center">
         <img src="{{ url_for('static', filename='icon/SortBox_logo.PNG') }}" >
     </div>
     <div class="container">
         <div style="padding: 100px 100px 10px;" >
-            <form class="bs-example bs-example-form" role="form" method="post">
-                <div class="row">
-                    <div >
-                        <div class="input-group">
-                            <input type="text" class="form-control" name="texts">
-                            <span class="input-group-btn">
-                                <button class="btn btn-default" type="submit">
-                                    Go!
-                                </button>
-                            </span>
-                        </div><!-- /input-group -->
-                    </div><!-- /.col-lg-6 -->
-                </div><!-- /.row -->
-            </form>
+            <div class="row">
+                <div >
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="texts" id="texts">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" id="btn">
+                                Go!
+                            </button>
+                        </span>
+                    </div><!-- /input-group -->
+                </div><!-- /.col-lg-6 -->
+            </div><!-- /.row -->
+
         </div>
     </div>
 
+
+
     <div class="container">
-        <form action="" enctype='multipart/form-data' method='POST'>
-             <input type="file" name="file">
-             <input type="submit" value="上传">
+        <form action="" enctype='multipart/form-data' id="upload">
+             <input type="file" name="file" id="file">
+             <input type="button" value="上传" id="btnFile">
          </form>
     </div>
+
 
     <hr />
 

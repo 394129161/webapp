@@ -4,6 +4,9 @@ from flask_nav import Nav
 from flask_nav.elements import *
 from config import config
 
+FC = None
+DP = None
+
 nav = Nav()
 nav.register_element('top', Navbar(u'文本分类',
                                    View(u'分类', 'app.index'),
@@ -27,6 +30,9 @@ def create_app(config_name):
     from www import view
     app.register_blueprint(view.bp)
     app.add_url_rule('/', endpoint='index')
+    from www.classifier import program
+    FC = program.initClassifier()
+    DP = program.initInputDataProcess()
     return app
 
 
